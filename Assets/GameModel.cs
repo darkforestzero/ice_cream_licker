@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+[Serializable]
 public class GameModel
 {
     private class DripZone
@@ -25,7 +26,7 @@ public class GameModel
 
     public const float kDripInterval = 5.0f;
     public const float kBrainHPFull = 100;
-    private const int kicecreamHPFull = 10000;
+    private const int kicecreamHPFull = 100;
     private const float kBrainHPRechargePerSecond = 10.0f;
 
     private float dripZoneActivationTime = kDripZoneActivationInterval;

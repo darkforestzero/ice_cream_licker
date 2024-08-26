@@ -4,15 +4,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 using DG.Tweening;
+using UnityEditor;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
-    GameModel model = null;
+    [SerializeField] private GameModel model = null;
     public GameObject dripZones;
     public GameObject dripPrefab;
     public GameObject iceCream;
     public GameObject tongue;
     public GameObject brainfreezeMeter;
+    public GameObject gameoverDialog;
     public Color brainfreezeColor;
     public Color dripColor;
     private List<GameObject> drips = new List<GameObject>();
@@ -21,6 +24,8 @@ public class GameController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        gameoverDialog.SetActive(false);
+
         // // delete all drips
         foreach (GameObject drip in drips)
         {
@@ -43,6 +48,13 @@ public class GameController : MonoBehaviour
             Debug.Log("Game Over");
             // show alert dialog that says "Game Over"
             iceCream.SetActive(false);
+            // show game over dialog after a 2 second delay, using DOTween
+            DOTween.Sequence()
+                .AppendInterval(2f)
+                .OnComplete(() =>
+                {
+                    gameoverDialog.SetActive(true);
+                });
         };
     }
 
@@ -62,22 +74,40 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!IsGameActive())
+        if (IsGameActive())
         {
-            return;
+            UpdateBrainfreezeMeter();
+            UpdateDrips();
+            UpdateDripZones();
+
+            model.Update(Time.deltaTime);
         }
 
-        UpdateBrainfreezeMeter();
-        UpdateDrips();
-        UpdateDripZones();
-
-        model.Update(Time.deltaTime);
         if (Input.GetMouseButtonDown(0)) // For mouse clicks or touch on the screen
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             Vector2 worldPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             RaycastHit2D hit = Physics2D.Raycast(worldPoint, Vector2.zero);
-            if (hit.collider != null && hit.transform.IsChildOf(dripZones.transform)) // Check if the hit 
+
+            if (hit.collider == null)
+            {
+                return;
+            }
+            else if (gameoverDialog.activeSelf && hit.transform == gameoverDialog.transform)
+            {
+                // gameoverDialog.SetActive(false);
+                // iceCream.SetActive(true);
+                // model.Reset();
+
+                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                return;
+            }
+
+            if (!IsGameActive())
+            {
+                return;
+            }
+            else if (hit.transform.IsChildOf(dripZones.transform))
             {
                 //iterate through all children of the dripZones object
                 for (int i = 0; i < dripZones.transform.childCount; i++)
@@ -90,7 +120,7 @@ public class GameController : MonoBehaviour
                     }
                 }
             }
-            else if (hit.collider != null && hit.transform == iceCream.transform)
+            else if (hit.transform == iceCream.transform)
             {
                 model.LickDripless();
                 DoLickAnimation(hit.collider.transform.position);
