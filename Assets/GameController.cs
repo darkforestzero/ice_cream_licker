@@ -59,6 +59,10 @@ public class GameController : MonoBehaviour
         };
         Debug.Log("GameController started");
     }
+    private void OnValidate()
+    {
+        model.SetSettings(settings);
+    }
 
     private void CreateDrip(int idx)
     {

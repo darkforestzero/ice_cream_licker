@@ -6,12 +6,13 @@ using UnityEngine;
 [Serializable]
 public class GameModel
 {
+    [Serializable]
     public class Settings
     {
         // diificulty
-        public int kMaxNumberOfSimultaneousDrips_Easy = 2;
-        public int kMaxNumberOfSimultaneousDrips_Medium = 3;
-        public int kMaxNumberOfSimultaneousDrips_Hard = 5;
+        public int kEasyDrips = 2;
+        public int kMediumDrips = 3;
+        public int kHardDrips = 5;
 
         // drips
         public float dripZoneActivationInterval = 3.0f;
@@ -56,13 +57,7 @@ public class GameModel
 
     public void Reset(Settings settings, int numDripZones)
     {
-        Debug.Assert(settings != null);
-        this.settings = settings;
-
-        brainHP = settings.brainHPFull;
-        cleanHP = settings.cleanHPFull;
-        icecreamHP = settings.icecreamHPFull;
-        dripZoneActivationTime = settings.dripZoneActivationInterval;
+        SetSettings(settings);
 
         dripZones = new List<DripZone>();
         for (int i = 0; i < numDripZones; i++)
@@ -72,14 +67,23 @@ public class GameModel
 
         // pick kMaxNumberOfSimultaneousDrips_Medium random drip zones and set them to active
         // TODO: difficulty variable
-        for (int i = 0; i < settings.kMaxNumberOfSimultaneousDrips_Medium; i++)
+        for (int i = 0; i < settings.kMediumDrips; i++)
         {
             int idx = UnityEngine.Random.Range(0, dripZones.Count);
             ResetDripInterval(idx);
             dripZones[idx].isActive = true;
         }
     }
+    public void SetSettings(Settings settings)
+    {
+        Debug.Assert(settings != null);
+        this.settings = settings;
 
+        brainHP = settings.brainHPFull;
+        cleanHP = settings.cleanHPFull;
+        icecreamHP = settings.icecreamHPFull;
+        dripZoneActivationTime = settings.dripZoneActivationInterval;
+    }
     public bool IsDripZoneActive(int idx)
     {
         Debug.Assert(0 <= idx && idx < dripZones.Count);
@@ -131,7 +135,7 @@ public class GameModel
             }
 
             // TODO: difficulty variable
-            int numToActivate = settings.kMaxNumberOfSimultaneousDrips_Medium - numActiveDrips;
+            int numToActivate = settings.kMediumDrips - numActiveDrips;
             if (numToActivate > 0)
             {
                 for (int i = 0; i < numToActivate; i++)
