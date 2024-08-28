@@ -6,6 +6,28 @@ using UnityEngine;
 [Serializable]
 public class GameModel
 {
+    public class Settings
+    {
+        // diificulty
+        public int kMaxNumberOfSimultaneousDrips_Easy = 2;
+        public int kMaxNumberOfSimultaneousDrips_Medium = 3;
+        public int kMaxNumberOfSimultaneousDrips_Hard = 5;
+
+        // drips
+        public float dripZoneActivationInterval = 3.0f;
+        public float dripInterval = 5.0f;
+
+        // icecream
+        public int icecreamHPFull = 100;
+        public int lickBrainDamage = 10;
+        public int lickIcecreamDamage = 10;
+
+        // brain / clean
+        public float brainHPFull = 100;
+        public float brainHPRechargePerSecond = 10.0f;
+        public int cleanHPFull = 100;
+    }
+
     private class DripZone
     {
         public float secondsToDrip = 0;
@@ -18,23 +40,45 @@ public class GameModel
         }
     }
 
-    public const int kMaxNumberOfSimultaneousDrips_Easy = 2;
-    public const int kMaxNumberOfSimultaneousDrips_Medium = 3;
-    public const int kMaxNumberOfSimultaneousDrips_Hard = 5;
+    private Settings settings = new Settings();
+    private float dripZoneActivationTime;
+    private float brainHP;
+    private int cleanHP;
+    private int icecreamHP;
 
-    public const float kDripZoneActivationInterval = 3.0f;
-
-    public const float kDripInterval = 5.0f;
-    public const float kBrainHPFull = 100;
-    private const int kicecreamHPFull = 100;
-    private const float kBrainHPRechargePerSecond = 10.0f;
-
-    private float dripZoneActivationTime = kDripZoneActivationInterval;
-
-    private float brainHP = kBrainHPFull;
-    private int cleanHP = 100;
-    private int icecreamHP = kicecreamHPFull;
     private List<DripZone> dripZones = new List<DripZone>();
+
+
+    public GameModel(Settings settings, int numDripZones)
+    {
+        Reset(settings, numDripZones);
+    }
+
+    public void Reset(Settings settings, int numDripZones)
+    {
+        Debug.Assert(settings != null);
+        this.settings = settings;
+
+        brainHP = settings.brainHPFull;
+        cleanHP = settings.cleanHPFull;
+        icecreamHP = settings.icecreamHPFull;
+        dripZoneActivationTime = settings.dripZoneActivationInterval;
+
+        dripZones = new List<DripZone>();
+        for (int i = 0; i < numDripZones; i++)
+        {
+            dripZones.Add(new DripZone());
+        }
+
+        // pick kMaxNumberOfSimultaneousDrips_Medium random drip zones and set them to active
+        // TODO: difficulty variable
+        for (int i = 0; i < settings.kMaxNumberOfSimultaneousDrips_Medium; i++)
+        {
+            int idx = UnityEngine.Random.Range(0, dripZones.Count);
+            ResetDripInterval(idx);
+            dripZones[idx].isActive = true;
+        }
+    }
 
     public bool IsDripZoneActive(int idx)
     {
@@ -45,7 +89,7 @@ public class GameModel
     public float GetDripTimeNormalized(int idx)
     {
         Debug.Assert(0 <= idx && idx < dripZones.Count);
-        return 1 - (dripZones[idx].secondsToDrip / kDripInterval);
+        return 1 - (dripZones[idx].secondsToDrip / settings.dripInterval);
     }
     public float GetSecondsToDrip(int idx)
     {
@@ -57,6 +101,10 @@ public class GameModel
     {
         return brainHP;
     }
+    public float GetBrainHPFull()
+    {
+        return settings.brainHPFull;
+    }
     // fire event on drip, including idx
     public event Action<int> DripEvent;
     // fire game over event
@@ -66,38 +114,12 @@ public class GameModel
         DripEvent?.Invoke(idx);
     }
 
-    public GameModel(int numDripZones)
-    {
-        Reset(numDripZones);
-    }
-
-    public void Reset(int numDripZones)
-    {
-        brainHP = kBrainHPFull;
-        cleanHP = 100;
-        icecreamHP = kicecreamHPFull;
-        dripZoneActivationTime = kDripZoneActivationInterval;
-        dripZones = new List<DripZone>();
-        for (int i = 0; i < numDripZones; i++)
-        {
-            dripZones.Add(new DripZone());
-        }
-
-        // pick kMaxNumberOfSimultaneousDrips_Medium random drip zones and set them to active
-        for (int i = 0; i < kMaxNumberOfSimultaneousDrips_Medium; i++)
-        {
-            int idx = UnityEngine.Random.Range(0, dripZones.Count);
-            ResetDripInterval(idx);
-            dripZones[idx].isActive = true;
-        }
-    }
-
     private void ActivateDripZones(float deltaTime)
     {
         dripZoneActivationTime -= deltaTime;
         if (dripZoneActivationTime <= 0)
         {
-            dripZoneActivationTime = kDripZoneActivationInterval;
+            dripZoneActivationTime = settings.dripZoneActivationInterval;
             // count number of active drips
             int numActiveDrips = 0;
             for (int i = 0; i < dripZones.Count; i++)
@@ -108,7 +130,8 @@ public class GameModel
                 }
             }
 
-            int numToActivate = kMaxNumberOfSimultaneousDrips_Medium - numActiveDrips;
+            // TODO: difficulty variable
+            int numToActivate = settings.kMaxNumberOfSimultaneousDrips_Medium - numActiveDrips;
             if (numToActivate > 0)
             {
                 for (int i = 0; i < numToActivate; i++)
@@ -124,13 +147,13 @@ public class GameModel
     {
         Debug.Log("Drip " + idx + " reset");
         Debug.Assert(0 <= idx && idx < dripZones.Count);
-        dripZones[idx].secondsToDrip = kDripInterval;
+        dripZones[idx].secondsToDrip = settings.dripInterval;
         dripZones[idx].isActive = false;
     }
 
     public void Update(float deltaTime)
     {
-        brainHP = Math.Min(brainHP + kBrainHPRechargePerSecond * deltaTime, kBrainHPFull);
+        brainHP = Math.Min(brainHP + settings.brainHPRechargePerSecond * deltaTime, settings.brainHPFull);
         // Debug.Log("Brain HP: " + brainHP);
 
         ActivateDripZones(deltaTime);
@@ -151,12 +174,10 @@ public class GameModel
             }
         }
     }
-    public const int lickBrainHPCost = 10;
-    public const int lickIcecreamHPCost = 10;
     public void LickDripless()
     {
-        brainHP = Math.Max(brainHP - lickBrainHPCost, 0);
-        icecreamHP -= lickIcecreamHPCost;
+        brainHP = Math.Max(brainHP - settings.lickBrainDamage, 0);
+        icecreamHP -= settings.lickIcecreamDamage;
         if (icecreamHP <= 0)
         {
             Debug.Log("Game Over: Ice Cream melted");

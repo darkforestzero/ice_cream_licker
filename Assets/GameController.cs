@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
-    [SerializeField] private GameModel model = null;
+    public GameModel model = null;
     public GameObject dripZones;
     public GameObject dripPrefab;
     public GameObject iceCream;
@@ -20,6 +20,7 @@ public class GameController : MonoBehaviour
     public Color dripColor;
     private List<GameObject> drips = new List<GameObject>();
 
+    [SerializeField] private GameModel.Settings settings = new GameModel.Settings();
 
     // Start is called before the first frame update
     void Start()
@@ -36,7 +37,7 @@ public class GameController : MonoBehaviour
         // // get the number of children in the dripZones object
         int numDripZones = dripZones.transform.childCount;
 
-        model = new GameModel(numDripZones);
+        model = new GameModel(settings, numDripZones);
 
         // subscribe to the model events
         model.DripEvent += (idx) =>
@@ -56,6 +57,7 @@ public class GameController : MonoBehaviour
                     gameoverDialog.SetActive(true);
                 });
         };
+        Debug.Log("GameController started");
     }
 
     private void CreateDrip(int idx)
@@ -175,7 +177,7 @@ public class GameController : MonoBehaviour
         float minRotation = 90f;
         float maxRotation = 240f - 360f;
         float minHP = 0f;
-        float maxHP = GameModel.kBrainHPFull;
+        float maxHP = model.GetBrainHPFull();
         float currentHP = model.GetBrainHP();
         float normalizedHP = 1 - currentHP / maxHP;
         float rotation = Mathf.Lerp(minRotation, maxRotation, normalizedHP);
